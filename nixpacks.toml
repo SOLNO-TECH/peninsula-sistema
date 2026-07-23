@@ -1,0 +1,14 @@
+# Dokploy · Nixpacks
+# Build: npm run build | Start: sirve dist en $PORT
+
+[phases.setup]
+nixPkgs = ["nodejs_22"]
+
+[phases.install]
+cmds = ["npm ci"]
+
+[phases.build]
+cmds = ["npm run build"]
+
+[start]
+cmd = "npx --yes serve -s dist -l ${PORT:-3000}"
