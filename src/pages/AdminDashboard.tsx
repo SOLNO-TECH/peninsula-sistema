@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   CheckCircle2,
   Clock3,
@@ -157,12 +157,15 @@ function DetailContent({
 
 export function AdminDashboard() {
   const { logout } = useAuth()
-  const [items, setItems] = useState(() => getSubmissions())
+  const navigate = useNavigate()
+  const [items, setItems] = useState<AccessSubmission[]>([])
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<'todos' | SubmissionStatus>('todos')
   const [selected, setSelected] = useState<AccessSubmission | null>(null)
 
-  const stats = useMemo(() => getSubmissionStats(), [items])
+  const stats = useMemo(() => getSubmissionStats(items), [items])
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -178,24 +181,49 @@ export function AdminDashboard() {
     })
   }, [items, query, statusFilter])
 
-  function refresh() {
-    const next = getSubmissions()
-    setItems(next)
-    if (selected) {
-      setSelected(next.find((s) => s.id === selected.id) ?? null)
+  async function refresh() {
+    setLoadError('')
+    try {
+      const next = await getSubmissions()
+      setItems(next)
+      setSelected((prev) =>
+        prev ? (next.find((s) => s.id === prev.id) ?? null) : null,
+      )
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error al cargar'
+      setLoadError(message)
+      if (message.includes('Sesión')) {
+        await logout()
+        navigate('/admin/login', { replace: true })
+      }
+    } finally {
+      setLoading(false)
     }
   }
 
-  function handleStatus(id: string, status: SubmissionStatus) {
-    updateSubmissionStatus(id, status)
-    refresh()
+  useEffect(() => {
+    void refresh()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  async function handleStatus(id: string, status: SubmissionStatus) {
+    try {
+      await updateSubmissionStatus(id, status)
+      await refresh()
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'No se pudo actualizar')
+    }
   }
 
-  function handleDelete(id: string) {
+  async function handleDelete(id: string) {
     if (!confirm('¿Eliminar esta solicitud?')) return
-    deleteSubmission(id)
-    if (selected?.id === id) setSelected(null)
-    refresh()
+    try {
+      await deleteSubmission(id)
+      if (selected?.id === id) setSelected(null)
+      await refresh()
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'No se pudo eliminar')
+    }
   }
 
   return (
@@ -282,6 +310,12 @@ export function AdminDashboard() {
           </label>
         </section>
 
+        {loadError && (
+          <div className="alert alert-error" role="alert">
+            {loadError}
+          </div>
+        )}
+
         <section className="ad-workspace">
           <div className="ad-list-panel">
             <div className="ad-list-head desktop-only">
@@ -292,7 +326,11 @@ export function AdminDashboard() {
               <span>Estado</span>
             </div>
 
-            {filtered.length === 0 ? (
+            {loading ? (
+              <div className="ad-empty">
+                <p>Cargando solicitudes…</p>
+              </div>
+            ) : filtered.length === 0 ? (
               <div className="ad-empty">
                 <p>No hay solicitudes para mostrar</p>
                 <span>Cuando envíen el formulario, aparecerán aquí.</span>

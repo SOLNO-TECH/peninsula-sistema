@@ -1,56 +1,64 @@
 # Península — Solicitudes de ingreso
 
 Formulario + dashboard admin + notificación por FormSubmit.
+Las solicitudes se guardan en el servidor (archivo JSON en un volume).
 
 ## Local
 
 ```bash
 npm install
 cp .env.example .env   # completa VITE_FORMSUBMIT_ID
-npm run dev
+npm run dev:server     # API en :3000 (otra terminal)
+npm run dev            # Vite en :5173 (proxy /api → :3000)
+```
+
+Producción local:
+
+```bash
+npm run build
+npm start
 ```
 
 ## Despliegue en Dokploy
 
-El repo está listo para **Nixpacks** o **Dockerfile**.
+### Nixpacks
 
-### Opción A — Nixpacks (recomendado en Dokploy)
+1. App → GitHub → `SOLNO-TECH/peninsula-sistema`
+2. Build Pack: **Nixpacks**
+3. Puerto: **3000**
+4. **Volume** (obligatorio para no perder datos):
+   - Mount path: `/data`
+5. Variables:
 
-1. Crea una app en Dokploy → Provider **GitHub** → repo `SOLNO-TECH/peninsula-sistema`
-2. Build Pack: **Nixpacks** (usa `nixpacks.toml`)
-3. Variables de entorno (también como **Build-time**, porque Vite las embebe al compilar):
+| Variable | Tipo | Ejemplo |
+|----------|------|---------|
+| `VITE_NOTIFY_EMAIL` | build | `proveedores@peninsulanvo.com` |
+| `VITE_FORMSUBMIT_ID` | build | hash FormSubmit |
+| `DATA_DIR` | runtime | `/data` |
+| `ADMIN_USER` | runtime | `admin` |
+| `ADMIN_PASSWORD` | runtime | tu contraseña |
 
-| Variable | Ejemplo |
-|----------|---------|
-| `VITE_NOTIFY_EMAIL` | `proveedores@peninsulanvo.com` |
-| `VITE_FORMSUBMIT_ID` | tu hash de FormSubmit |
+6. Deploy / Rebuild
 
-4. Puerto: **3000** (o el que Dokploy asigne con `$PORT`)
-5. Deploy
+### Dockerfile
 
-### Opción B — Dockerfile + Nginx
-
-1. En Dokploy elige build type **Dockerfile**
-2. Pasa los mismos `VITE_*` como **build args / env de build**
-3. Puerto expuesto: **80**
-4. Deploy
+Igual: puerto **3000**, volume en `/data`, mismas variables.
 
 ### Importante
 
-- Las variables `VITE_*` se usan en el **build**, no solo en runtime.
-- Tras cambiar env, haz **Rebuild** (no solo restart).
-- FormSubmit: si el dominio de producción es nuevo, puede pedir reactivar el formulario una vez.
+- `VITE_*` van en el **build**; tras cambiarlas, **Rebuild**.
+- Sin volume, los datos se pierden al redesplegar.
+- Credenciales admin ya no van en el frontend; solo en el servidor.
 
 ## Rutas
 
 | Ruta | Descripción |
 |------|-------------|
 | `/` | Formulario |
-| `/email-preview` | Vista previa correo |
 | `/admin/login` | Login |
 | `/admin` | Dashboard |
 
-## Admin
+## Admin (por defecto)
 
 - Usuario: `admin`
-- Contraseña: `peninsula2026`
+- Contraseña: `peninsula2026` (cámbiala con `ADMIN_PASSWORD`)

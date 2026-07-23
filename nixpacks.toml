@@ -1,5 +1,5 @@
 # Dokploy · Nixpacks
-# Usa Node 20 LTS + Vite 6 (sin Rolldown nativo)
+# Node 20 + API Express + frontend estático
 
 [phases.setup]
 nixPkgs = ["nodejs_20"]
@@ -11,4 +11,4 @@ cmds = ["npm ci"]
 cmds = ["npm run build"]
 
 [start]
-cmd = "npx --yes serve -s dist -l ${PORT:-3000}"
+cmd = "node server/index.js"

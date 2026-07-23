@@ -1,68 +1,126 @@
 import type { AccessSubmission, SubmissionStatus } from '../types'
 
-const STORAGE_KEY = 'peninsula_submissions'
+const TOKEN_KEY = 'peninsula_admin_token'
 
-function readAll(): AccessSubmission[] {
+function authHeaders(): HeadersInit {
+  const token = localStorage.getItem(TOKEN_KEY)
+  return token
+    ? { Authorization: `Bearer ${token}`, Accept: 'application/json' }
+    : { Accept: 'application/json' }
+}
+
+async function parseError(res: Response): Promise<string> {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return []
-    return JSON.parse(raw) as AccessSubmission[]
+    const data = (await res.json()) as { error?: string }
+    if (data?.error) return data.error
   } catch {
-    return []
+    /* ignore */
   }
+  return `Error ${res.status}`
 }
 
-function writeAll(items: AccessSubmission[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(items))
+export function getAdminToken() {
+  return localStorage.getItem(TOKEN_KEY)
 }
 
-export function getSubmissions(): AccessSubmission[] {
-  return readAll().sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-  )
+export function setAdminToken(token: string | null) {
+  if (token) localStorage.setItem(TOKEN_KEY, token)
+  else localStorage.removeItem(TOKEN_KEY)
 }
 
-export function addSubmission(
-  data: Omit<AccessSubmission, 'id' | 'status' | 'createdAt'>,
-): AccessSubmission {
-  const submission: AccessSubmission = {
-    ...data,
-    id: crypto.randomUUID(),
-    status: 'pendiente',
-    createdAt: new Date().toISOString(),
+export async function loginAdmin(
+  username: string,
+  password: string,
+): Promise<boolean> {
+  const res = await fetch('/api/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify({ username, password }),
+  })
+  if (!res.ok) {
+    setAdminToken(null)
+    return false
   }
-  const all = readAll()
-  all.push(submission)
-  writeAll(all)
-  return submission
-}
-
-export function updateSubmissionStatus(
-  id: string,
-  status: SubmissionStatus,
-): AccessSubmission | null {
-  const all = readAll()
-  const index = all.findIndex((s) => s.id === id)
-  if (index === -1) return null
-  all[index] = { ...all[index], status }
-  writeAll(all)
-  return all[index]
-}
-
-export function deleteSubmission(id: string): boolean {
-  const all = readAll()
-  const next = all.filter((s) => s.id !== id)
-  if (next.length === all.length) return false
-  writeAll(next)
+  const data = (await res.json()) as { token?: string }
+  if (!data.token) return false
+  setAdminToken(data.token)
   return true
 }
 
-export function getSubmissionStats() {
-  const all = getSubmissions()
+export async function logoutAdmin() {
+  const token = getAdminToken()
+  if (token) {
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: authHeaders(),
+      })
+    } catch {
+      /* ignore */
+    }
+  }
+  setAdminToken(null)
+}
+
+export async function getSubmissions(): Promise<AccessSubmission[]> {
+  const res = await fetch('/api/submissions', { headers: authHeaders() })
+  if (res.status === 401) {
+    setAdminToken(null)
+    throw new Error('Sesión expirada')
+  }
+  if (!res.ok) throw new Error(await parseError(res))
+  return (await res.json()) as AccessSubmission[]
+}
+
+export async function addSubmission(
+  data: Omit<AccessSubmission, 'id' | 'status' | 'createdAt'>,
+): Promise<AccessSubmission> {
+  const res = await fetch('/api/submissions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify(data),
+  })
+  if (!res.ok) throw new Error(await parseError(res))
+  return (await res.json()) as AccessSubmission
+}
+
+export async function updateSubmissionStatus(
+  id: string,
+  status: SubmissionStatus,
+): Promise<AccessSubmission> {
+  const res = await fetch(`/api/submissions/${id}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      ...authHeaders(),
+    },
+    body: JSON.stringify({ status }),
+  })
+  if (res.status === 401) {
+    setAdminToken(null)
+    throw new Error('Sesión expirada')
+  }
+  if (!res.ok) throw new Error(await parseError(res))
+  return (await res.json()) as AccessSubmission
+}
+
+export async function deleteSubmission(id: string): Promise<void> {
+  const res = await fetch(`/api/submissions/${id}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  })
+  if (res.status === 401) {
+    setAdminToken(null)
+    throw new Error('Sesión expirada')
+  }
+  if (!res.ok) throw new Error(await parseError(res))
+}
+
+export function getSubmissionStats(items: AccessSubmission[]) {
   return {
-    total: all.length,
-    pendiente: all.filter((s) => s.status === 'pendiente').length,
-    aprobado: all.filter((s) => s.status === 'aprobado').length,
-    rechazado: all.filter((s) => s.status === 'rechazado').length,
+    total: items.length,
+    pendiente: items.filter((s) => s.status === 'pendiente').length,
+    aprobado: items.filter((s) => s.status === 'aprobado').length,
+    rechazado: items.filter((s) => s.status === 'rechazado').length,
   }
 }

@@ -96,8 +96,12 @@ export function ContactForm() {
     setSubmitting(true)
     setSubmitError('')
     try {
-      await sendSubmissionEmail({ ...form })
-      addSubmission({ ...form })
+      await addSubmission({ ...form })
+      try {
+        await sendSubmissionEmail({ ...form })
+      } catch {
+        // La solicitud ya quedó guardada; el correo es secundario
+      }
       setForm(INITIAL)
       setSuccess(true)
       document.querySelector('.gate-form')?.scrollTo({ top: 0, behavior: 'smooth' })

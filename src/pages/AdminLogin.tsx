@@ -15,15 +15,23 @@ export function AdminLogin() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
   if (isAuthenticated) return <Navigate to="/admin" replace />
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setError('')
-    const ok = login(username.trim(), password)
-    if (ok) navigate('/admin')
-    else setError('Usuario o contraseña incorrectos')
+    setSubmitting(true)
+    try {
+      const ok = await login(username.trim(), password)
+      if (ok) navigate('/admin')
+      else setError('Usuario o contraseña incorrectos')
+    } catch {
+      setError('No se pudo conectar con el servidor')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -107,9 +115,14 @@ export function AdminLogin() {
             )}
 
             <div className="gate-actions">
-              <button type="submit" className="gate-btn gate-btn-solid" style={{ flex: 1 }}>
+              <button
+                type="submit"
+                className="gate-btn gate-btn-solid"
+                style={{ flex: 1 }}
+                disabled={submitting}
+              >
                 <IconSend size={17} />
-                Ingresar
+                {submitting ? 'Ingresando…' : 'Ingresar'}
               </button>
             </div>
 

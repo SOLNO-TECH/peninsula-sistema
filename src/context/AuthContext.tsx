@@ -6,43 +6,33 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-
-const AUTH_KEY = 'peninsula_admin_auth'
-
-/** Credenciales de demostración — cámbialas en producción */
-export const ADMIN_CREDENTIALS = {
-  username: 'admin',
-  password: 'peninsula2026',
-}
+import {
+  getAdminToken,
+  loginAdmin,
+  logoutAdmin,
+} from '../services/submissions'
 
 interface AuthContextValue {
   isAuthenticated: boolean
-  login: (username: string, password: string) => boolean
-  logout: () => void
+  login: (username: string, password: string) => Promise<boolean>
+  logout: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
-function readAuth(): boolean {
-  return localStorage.getItem(AUTH_KEY) === '1'
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(readAuth)
+  const [isAuthenticated, setIsAuthenticated] = useState(
+    () => Boolean(getAdminToken()),
+  )
 
-  const login = useCallback((username: string, password: string) => {
-    const ok =
-      username === ADMIN_CREDENTIALS.username &&
-      password === ADMIN_CREDENTIALS.password
-    if (ok) {
-      localStorage.setItem(AUTH_KEY, '1')
-      setIsAuthenticated(true)
-    }
+  const login = useCallback(async (username: string, password: string) => {
+    const ok = await loginAdmin(username, password)
+    setIsAuthenticated(ok)
     return ok
   }, [])
 
-  const logout = useCallback(() => {
-    localStorage.removeItem(AUTH_KEY)
+  const logout = useCallback(async () => {
+    await logoutAdmin()
     setIsAuthenticated(false)
   }, [])
 
