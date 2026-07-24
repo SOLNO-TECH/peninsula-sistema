@@ -1,5 +1,5 @@
-# Dokploy · Nixpacks
-# Node 20 + API Express + frontend estático
+# Dokploy Nixpacks
+# Node 20 + Express API + static frontend
 # cache-bust: hero-v2-2026-07-23
 
 [phases.setup]
