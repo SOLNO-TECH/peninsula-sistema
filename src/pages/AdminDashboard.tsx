@@ -237,9 +237,6 @@ export function AdminDashboard() {
           </div>
 
           <nav className="ad-top-nav">
-            <Link to="/email-preview" className="ad-nav-link">
-              Vista correo
-            </Link>
             <Link to="/" className="ad-nav-link">
               Formulario <ExternalLink size={14} />
             </Link>
