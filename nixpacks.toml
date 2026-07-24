@@ -1,14 +1,15 @@
-# Dokploy Â· Nixpacks
-# Node 20 + API Express + frontend estÃ¡tico
+# Dokploy · Nixpacks
+# Node 20 + API Express + frontend estático
+# cache-bust: hero-v2-2026-07-23
 
 [phases.setup]
-nixPkgs = ["nodejs_20"]
+nixPkgs = [""nodejs_20""]
 
 [phases.install]
-cmds = ["npm ci"]
+cmds = [""npm ci""]
 
 [phases.build]
-cmds = ["npm run build"]
+cmds = [""npm run build""]
 
 [start]
-cmd = "node server/index.js"
+cmd = ""node server/index.js""
