@@ -1,6 +1,5 @@
 # Dokploy Nixpacks
 # Node 20 + Express API + static frontend
-# cache-bust: hero-v2-2026-07-23
 
 [phases.setup]
 nixPkgs = ["nodejs_20"]
@@ -9,7 +8,11 @@ nixPkgs = ["nodejs_20"]
 cmds = ["npm ci"]
 
 [phases.build]
-cmds = ["npm run build"]
+cmds = [
+  "npm run build",
+  "test -f dist/peninsula-hero-v2.png",
+  "echo deploy-bust-2026-07-23-425d0a0"
+]
 
 [start]
 cmd = "node server/index.js"

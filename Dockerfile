@@ -1,4 +1,4 @@
-# Multi-stage build para Dokploy / Docker
+# Multi-stage build para Dokploy
 FROM node:20-alpine AS build
 
 WORKDIR /app
@@ -10,10 +10,12 @@ COPY . .
 
 ARG VITE_NOTIFY_EMAIL
 ARG VITE_FORMSUBMIT_ID
+ARG CACHEBUST=1
 ENV VITE_NOTIFY_EMAIL=$VITE_NOTIFY_EMAIL
 ENV VITE_FORMSUBMIT_ID=$VITE_FORMSUBMIT_ID
 
-RUN npm run build
+# CACHEBUST invalida la capa cuando cambia (evita imagen vieja en Dokploy)
+RUN echo "cachebust=$CACHEBUST" && npm run build && test -f dist/peninsula-hero-v2.png
 RUN npm prune --omit=dev
 
 FROM node:20-alpine AS production
