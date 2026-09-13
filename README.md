@@ -1,6 +1,6 @@
-# Península — Solicitudes de ingreso
+# Peninsula - Solicitudes de ingreso
 
-Formulario + dashboard admin + notificación por FormSubmit.
+Formulario bilingue (ES/EN) + dashboard admin/lobby + FormSubmit.
 Las solicitudes se guardan en el servidor (archivo JSON en un volume).
 
 ## Local
@@ -9,56 +9,49 @@ Las solicitudes se guardan en el servidor (archivo JSON en un volume).
 npm install
 cp .env.example .env   # completa VITE_FORMSUBMIT_ID
 npm run dev:server     # API en :3000 (otra terminal)
-npm run dev            # Vite en :5173 (proxy /api → :3000)
-```
-
-Producción local:
-
-```bash
-npm run build
-npm start
+npm run dev            # Vite en :5173 (proxy /api -> :3000)
 ```
 
 ## Despliegue en Dokploy
 
-### Nixpacks
-
-1. App → GitHub → `SOLNO-TECH/peninsula-sistema`
-2. Build Pack: **Nixpacks**
+1. Build type: **Dockerfile** (recomendado) o Nixpacks
+2. Dockerfile path: `Dockerfile` / context: `.`
 3. Puerto: **3000**
-4. **Volume** (obligatorio para no perder datos):
-   - Mount path: `/data`
+4. Volume mount: `/data`
 5. Variables:
 
 | Variable | Tipo | Ejemplo |
 |----------|------|---------|
 | `VITE_NOTIFY_EMAIL` | build | `proveedores@peninsulanvo.com` |
 | `VITE_FORMSUBMIT_ID` | build | hash FormSubmit |
+| `VITE_NOTIFY_EXTRA_EMAILS` | build | `recepcion@peninsulanvo.com` |
 | `DATA_DIR` | runtime | `/data` |
 | `ADMIN_USER` | runtime | `admin` |
-| `ADMIN_PASSWORD` | runtime | tu contraseña |
+| `ADMIN_PASSWORD` | runtime | tu contrasena |
+| `LOBBY_USER` | runtime | `lobby` |
+| `LOBBY_PASSWORD` | runtime | tu contrasena lobby |
 
-6. Deploy / Rebuild
-
-### Dockerfile
-
-Igual: puerto **3000**, volume en `/data`, mismas variables.
-
-### Importante
-
-- `VITE_*` van en el **build**; tras cambiarlas, **Rebuild**.
-- Sin volume, los datos se pierden al redesplegar.
-- Credenciales admin ya no van en el frontend; solo en el servidor.
+Tras cambiar `VITE_*`, haz **Rebuild**.
 
 ## Rutas
 
-| Ruta | Descripción |
+| Ruta | Descripcion |
 |------|-------------|
-| `/` | Formulario |
+| `/` | Formulario ES/EN |
 | `/admin/login` | Login |
 | `/admin` | Dashboard |
 
-## Admin (por defecto)
+## Usuarios (por defecto)
 
-- Usuario: `admin`
-- Contraseña: `peninsula2026` (cámbiala con `ADMIN_PASSWORD`)
+| Rol | Usuario | Contrasena | Permisos |
+|-----|---------|------------|----------|
+| Admin | `admin` | `peninsula2026` | Ver + aprobar/rechazar/eliminar |
+| Lobby | `lobby` | `lobby2026` | Solo ver solicitudes |
+
+## Correos
+
+Cada envio notifica a:
+- `proveedores@peninsulanvo.com` (o hash FormSubmit)
+- `recepcion@peninsulanvo.com` (extra)
+
+Si FormSubmit pide activar un correo nuevo, hay que confirmar el link la primera vez.

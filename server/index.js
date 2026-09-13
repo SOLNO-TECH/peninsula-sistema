@@ -1,7 +1,7 @@
 import express from 'express'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { login, logout, requireAuth } from './auth.js'
+import { login, logout, requireAuth, requireAdmin } from './auth.js'
 import {
   createSubmission,
   listSubmissions,
@@ -57,7 +57,7 @@ app.post('/api/submissions', async (req, res) => {
   }
 })
 
-app.patch('/api/submissions/:id', requireAuth, async (req, res) => {
+app.patch('/api/submissions/:id', requireAdmin, async (req, res) => {
   try {
     const item = await updateStatus(req.params.id, req.body?.status)
     if (!item) {
@@ -71,7 +71,7 @@ app.patch('/api/submissions/:id', requireAuth, async (req, res) => {
   }
 })
 
-app.delete('/api/submissions/:id', requireAuth, async (req, res) => {
+app.delete('/api/submissions/:id', requireAdmin, async (req, res) => {
   try {
     const ok = await removeSubmission(req.params.id)
     if (!ok) {
@@ -102,6 +102,6 @@ app.use((req, res, next) => {
 })
 
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Península listening on :${PORT}`)
+  console.log(`Peninsula listening on :${PORT}`)
   console.log(`Data dir: ${process.env.DATA_DIR || path.join(root, 'data')}`)
 })

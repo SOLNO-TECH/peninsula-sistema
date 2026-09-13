@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useMemo, useState, type FormEvent } from 'react'
 import { InputField, SelectField, TextAreaField } from '../components/FormField'
 import { addSubmission } from '../services/submissions'
 import { sendSubmissionEmail } from '../services/email'
@@ -17,19 +17,14 @@ import {
   IconDoor,
 } from '../components/Icons'
 import { PoweredBy } from '../components/PoweredBy'
-
-const AUTORIZADO_OPTIONS = [
-  { value: 'propietario', label: 'Propietario' },
-  { value: 'administrador', label: 'Administrador' },
-]
-
-const TIPO_INGRESO_OPTIONS = [
-  { value: 'mantenimiento', label: 'Mantenimiento' },
-  { value: 'reparacion', label: 'Reparación' },
-  { value: 'construccion', label: 'Construcción' },
-  { value: 'mobiliario', label: 'Mobiliario' },
-  { value: 'otro', label: 'Otro' },
-]
+import {
+  autorizadoOptions,
+  getFormCopy,
+  LANG_KEY,
+  readLang,
+  tipoIngresoOptions,
+  type Lang,
+} from '../i18n/form'
 
 const INITIAL = {
   departamento: '',
@@ -47,11 +42,23 @@ const INITIAL = {
 type FormErrors = Partial<Record<keyof typeof INITIAL, string>>
 
 export function ContactForm() {
+  const [lang, setLang] = useState<Lang>(readLang)
+  const t = useMemo(() => getFormCopy(lang), [lang])
   const [form, setForm] = useState(INITIAL)
   const [errors, setErrors] = useState<FormErrors>({})
   const [success, setSuccess] = useState(false)
   const [submitError, setSubmitError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+
+  function switchLang(next: Lang) {
+    setLang(next)
+    try {
+      localStorage.setItem(LANG_KEY, next)
+    } catch {
+      /* ignore */
+    }
+    setErrors({})
+  }
 
   function setField<K extends keyof typeof INITIAL>(key: K, value: string) {
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -62,18 +69,18 @@ export function ContactForm() {
 
   function validate(): FormErrors {
     const next: FormErrors = {}
-    if (!form.departamento.trim()) next.departamento = 'Indica el departamento'
-    if (!form.empresa.trim()) next.empresa = 'Indica la empresa o proveedor'
-    if (!form.autorizado) next.autorizado = 'Selecciona quién autoriza'
-    if (!form.email.trim()) next.email = 'El correo es obligatorio'
+    if (!form.departamento.trim()) next.departamento = t.errDepartamento
+    if (!form.empresa.trim()) next.empresa = t.errEmpresa
+    if (!form.autorizado) next.autorizado = t.errAutorizado
+    if (!form.email.trim()) next.email = t.errEmail
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
-      next.email = 'Correo no válido'
-    if (!form.fechaInicio) next.fechaInicio = 'Indica la fecha de inicio'
-    if (!form.fechaFin) next.fechaFin = 'Indica la fecha de fin'
+      next.email = t.errEmailInvalid
+    if (!form.fechaInicio) next.fechaInicio = t.errFechaInicio
+    if (!form.fechaFin) next.fechaFin = t.errFechaFin
     if (form.fechaInicio && form.fechaFin && form.fechaFin < form.fechaInicio)
-      next.fechaFin = 'La fecha fin debe ser posterior al inicio'
-    if (!form.tipoIngreso) next.tipoIngreso = 'Selecciona el tipo de ingreso'
-    if (!form.descripcion.trim()) next.descripcion = 'Describe las actividades'
+      next.fechaFin = t.errFechaOrden
+    if (!form.tipoIngreso) next.tipoIngreso = t.errTipo
+    if (!form.descripcion.trim()) next.descripcion = t.errDescripcion
     return next
   }
 
@@ -106,10 +113,7 @@ export function ContactForm() {
       setSuccess(true)
       document.querySelector('.gate-form')?.scrollTo({ top: 0, behavior: 'smooth' })
     } catch (err) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : 'No se pudo enviar el correo. Revisa la conexión o FormSubmit.'
+      const message = err instanceof Error ? err.message : t.errSubmit
       setSubmitError(message)
     } finally {
       setSubmitting(false)
@@ -117,41 +121,74 @@ export function ContactForm() {
   }
 
   return (
-    <div className="gate">
+    <div className="gate" lang={lang}>
       <aside className="gate-hero">
         <div className="gate-hero-media" aria-hidden="true" />
         <div className="gate-hero-veil" aria-hidden="true" />
 
         <div className="gate-hero-top">
           <p className="gate-brand">Península</p>
+          <div className="lang-switch" role="group" aria-label="Language">
+            <button
+              type="button"
+              className={`lang-btn${lang === 'es' ? ' active' : ''}`}
+              onClick={() => switchLang('es')}
+            >
+              ES
+            </button>
+            <button
+              type="button"
+              className={`lang-btn${lang === 'en' ? ' active' : ''}`}
+              onClick={() => switchLang('en')}
+            >
+              EN
+            </button>
+          </div>
         </div>
 
         <div className="gate-hero-copy">
-          <p className="gate-eyebrow">Nuevo Vallarta · México</p>
+          <p className="gate-eyebrow">{t.brandPlace}</p>
           <h1 className="gate-title">
-            Solicitud de ingreso
-            <em> al residencial</em>
+            {t.heroTitle}
+            <em>{t.heroTitleEm}</em>
           </h1>
-          <p className="gate-lead">
-            Completa el formulario. La administración revisará y autorizará cada
-            solicitud.
-          </p>
+          <p className="gate-lead">{t.heroLead}</p>
         </div>
       </aside>
 
       <main className="gate-form">
         <div className="gate-form-inner">
           <header className="gate-form-head">
-            <h2>Formulario de contacto</h2>
-            <p>Todos los campos marcados son obligatorios.</p>
+            <div className="gate-form-head-row">
+              <div>
+                <h2>{t.formTitle}</h2>
+                <p>{t.formIntro}</p>
+              </div>
+              <div className="lang-switch lang-switch-form" role="group" aria-label="Language">
+                <button
+                  type="button"
+                  className={`lang-btn${lang === 'es' ? ' active' : ''}`}
+                  onClick={() => switchLang('es')}
+                >
+                  ES
+                </button>
+                <button
+                  type="button"
+                  className={`lang-btn${lang === 'en' ? ' active' : ''}`}
+                  onClick={() => switchLang('en')}
+                >
+                  EN
+                </button>
+              </div>
+            </div>
           </header>
 
           {success && (
             <div className="gate-success" role="status">
               <IconCheck size={20} />
               <div>
-                <strong>Solicitud enviada</strong>
-                <span>Se notificó por correo a la administración.</span>
+                <strong>{t.successTitle}</strong>
+                <span>{t.successBody}</span>
               </div>
             </div>
           )}
@@ -165,50 +202,51 @@ export function ContactForm() {
           <form onSubmit={handleSubmit} noValidate>
             <div className="fx-grid">
               <InputField
-                label="Departamento"
+                label={t.departamento}
                 required
                 icon={<IconBuilding />}
-                placeholder="Ej. Torre A · 1204"
+                placeholder={t.departamentoPh}
                 value={form.departamento}
                 onChange={(e) => setField('departamento', e.target.value)}
                 error={errors.departamento}
               />
 
               <InputField
-                label="Empresa / Proveedor"
+                label={t.empresa}
                 required
                 icon={<IconBriefcase />}
-                placeholder="Nombre de la empresa"
+                placeholder={t.empresaPh}
                 value={form.empresa}
                 onChange={(e) => setField('empresa', e.target.value)}
                 error={errors.empresa}
               />
 
               <InputField
-                label="Nombre de trabajadores"
+                label={t.trabajadores}
                 icon={<IconUsers />}
-                placeholder="Quiénes ingresarán"
+                placeholder={t.trabajadoresPh}
                 value={form.trabajadores}
                 onChange={(e) => setField('trabajadores', e.target.value)}
               />
 
               <SelectField
-                label="Autorizado"
+                label={t.autorizado}
                 required
                 icon={<IconUser />}
-                options={AUTORIZADO_OPTIONS}
+                placeholder={t.selectPlaceholder}
+                options={autorizadoOptions(lang)}
                 value={form.autorizado}
                 onChange={(e) => setField('autorizado', e.target.value)}
                 error={errors.autorizado}
               />
 
               <InputField
-                label="Correo electrónico"
+                label={t.email}
                 required
                 type="email"
                 inputMode="email"
                 icon={<IconMail />}
-                placeholder="nombre@ejemplo.com"
+                placeholder={t.emailPh}
                 value={form.email}
                 onChange={(e) => setField('email', e.target.value)}
                 error={errors.email}
@@ -216,18 +254,18 @@ export function ContactForm() {
               />
 
               <InputField
-                label="Teléfono autorizado"
+                label={t.telefono}
                 type="tel"
                 inputMode="tel"
                 icon={<IconPhone />}
-                placeholder="+52 55 0000 0000"
+                placeholder={t.telefonoPh}
                 value={form.telefono}
                 onChange={(e) => setField('telefono', e.target.value)}
                 autoComplete="tel"
               />
 
               <InputField
-                label="Fecha inicio"
+                label={t.fechaInicio}
                 required
                 type="date"
                 icon={<IconCalendar />}
@@ -237,7 +275,7 @@ export function ContactForm() {
               />
 
               <InputField
-                label="Fecha fin"
+                label={t.fechaFin}
                 required
                 type="date"
                 icon={<IconCalendar />}
@@ -248,10 +286,11 @@ export function ContactForm() {
 
               <div className="fx-span-2">
                 <SelectField
-                  label="Tipo de ingreso solicitado"
+                  label={t.tipoIngreso}
                   required
                   icon={<IconDoor />}
-                  options={TIPO_INGRESO_OPTIONS}
+                  placeholder={t.selectPlaceholder}
+                  options={tipoIngresoOptions(lang)}
                   value={form.tipoIngreso}
                   onChange={(e) => setField('tipoIngreso', e.target.value)}
                   error={errors.tipoIngreso}
@@ -260,11 +299,11 @@ export function ContactForm() {
 
               <div className="fx-span-2">
                 <TextAreaField
-                  label="Descripción de actividades"
+                  label={t.descripcion}
                   required
                   icon={<IconClipboard />}
                   rows={4}
-                  placeholder="Describe el trabajo o motivo del ingreso…"
+                  placeholder={t.descripcionPh}
                   value={form.descripcion}
                   onChange={(e) => setField('descripcion', e.target.value)}
                   error={errors.descripcion}
@@ -275,7 +314,7 @@ export function ContactForm() {
             <div className="gate-actions">
               <button type="button" className="gate-btn gate-btn-ghost" onClick={handleClear}>
                 <IconReset size={17} />
-                Limpiar
+                {t.clear}
               </button>
               <button
                 type="submit"
@@ -283,7 +322,7 @@ export function ContactForm() {
                 disabled={submitting}
               >
                 <IconSend size={17} />
-                {submitting ? 'Enviando…' : 'Enviar'}
+                {submitting ? t.sending : t.send}
               </button>
             </div>
           </form>

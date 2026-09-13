@@ -11,7 +11,7 @@ cmds = ["npm ci"]
 cmds = [
   "npm run build",
   "test -f dist/peninsula-hero-v2.png",
-  "echo deploy-bust-2026-07-23-425d0a0"
+  "echo deploy-bust-2026-09-11-lobby-i18n"
 ]
 
 [start]

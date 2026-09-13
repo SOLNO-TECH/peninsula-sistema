@@ -7,13 +7,17 @@ import {
   type ReactNode,
 } from 'react'
 import {
+  getAdminRole,
   getAdminToken,
   loginAdmin,
   logoutAdmin,
+  type UserRole,
 } from '../services/submissions'
 
 interface AuthContextValue {
   isAuthenticated: boolean
+  role: UserRole | null
+  canManage: boolean
   login: (username: string, password: string) => Promise<boolean>
   logout: () => Promise<void>
 }
@@ -24,21 +28,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(
     () => Boolean(getAdminToken()),
   )
+  const [role, setRole] = useState<UserRole | null>(() => getAdminRole())
 
   const login = useCallback(async (username: string, password: string) => {
-    const ok = await loginAdmin(username, password)
-    setIsAuthenticated(ok)
-    return ok
+    const result = await loginAdmin(username, password)
+    setIsAuthenticated(result.ok)
+    setRole(result.ok ? result.role : null)
+    return result.ok
   }, [])
 
   const logout = useCallback(async () => {
     await logoutAdmin()
     setIsAuthenticated(false)
+    setRole(null)
   }, [])
 
   const value = useMemo(
-    () => ({ isAuthenticated, login, logout }),
-    [isAuthenticated, login, logout],
+    () => ({
+      isAuthenticated,
+      role,
+      canManage: role === 'admin',
+      login,
+      logout,
+    }),
+    [isAuthenticated, role, login, logout],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

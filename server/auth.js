@@ -2,10 +2,17 @@ import { createHmac, timingSafeEqual, randomBytes } from 'node:crypto'
 
 const ADMIN_USER = process.env.ADMIN_USER || 'admin'
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'peninsula2026'
+const LOBBY_USER = process.env.LOBBY_USER || 'lobby'
+const LOBBY_PASSWORD = process.env.LOBBY_PASSWORD || 'lobby2026'
 const TOKEN_SECRET =
   process.env.ADMIN_TOKEN_SECRET ||
   process.env.ADMIN_PASSWORD ||
   'peninsula-dev-secret'
+
+const USERS = {
+  [ADMIN_USER]: { password: ADMIN_PASSWORD, role: 'admin' },
+  [LOBBY_USER]: { password: LOBBY_PASSWORD, role: 'lobby' },
+}
 
 const revoked = new Set()
 
@@ -30,7 +37,8 @@ function verify(token) {
   try {
     const payload = JSON.parse(Buffer.from(body, 'base64url').toString('utf8'))
     if (!payload?.exp || Date.now() > payload.exp) return null
-    if (payload.u !== ADMIN_USER) return null
+    if (!USERS[payload.u]) return null
+    if (payload.role !== USERS[payload.u].role) return null
     return payload
   } catch {
     return null
@@ -48,16 +56,21 @@ function safeEqualString(a, b) {
 }
 
 export function login(username, password) {
-  const userOk = safeEqualString(username, ADMIN_USER)
-  const passOk = safeEqualString(password, ADMIN_PASSWORD)
-  if (!userOk || !passOk) return null
+  const account = USERS[username]
+  if (!account) {
+    // comparación dummy para no filtrar usuarios por timing
+    safeEqualString(password, ADMIN_PASSWORD)
+    return null
+  }
+  if (!safeEqualString(password, account.password)) return null
 
   const token = sign({
-    u: ADMIN_USER,
+    u: username,
+    role: account.role,
     exp: Date.now() + 1000 * 60 * 60 * 24 * 7,
     n: randomBytes(8).toString('hex'),
   })
-  return { token, username: ADMIN_USER }
+  return { token, username, role: account.role }
 }
 
 export function requireAuth(req, res, next) {
@@ -71,6 +84,16 @@ export function requireAuth(req, res, next) {
   req.admin = payload
   req.token = token
   next()
+}
+
+export function requireAdmin(req, res, next) {
+  requireAuth(req, res, () => {
+    if (req.admin?.role !== 'admin') {
+      res.status(403).json({ error: 'Solo administración puede modificar' })
+      return
+    }
+    next()
+  })
 }
 
 export function logout(token) {

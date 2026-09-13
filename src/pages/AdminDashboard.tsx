@@ -60,10 +60,12 @@ function formatDateTime(iso: string) {
 
 function DetailContent({
   selected,
+  canManage,
   onStatus,
   onDelete,
 }: {
   selected: AccessSubmission
+  canManage: boolean
   onStatus: (id: string, status: SubmissionStatus) => void
   onDelete: (id: string) => void
 }) {
@@ -125,38 +127,42 @@ function DetailContent({
         <p>{selected.descripcion}</p>
       </div>
 
-      <div className="ad-detail-actions">
-        <button
-          type="button"
-          className="ad-btn ad-btn-ok"
-          onClick={() => onStatus(selected.id, 'aprobado')}
-        >
-          <CheckCircle2 size={16} />
-          Aprobar
-        </button>
-        <button
-          type="button"
-          className="ad-btn ad-btn-no"
-          onClick={() => onStatus(selected.id, 'rechazado')}
-        >
-          <XCircle size={16} />
-          Rechazar
-        </button>
-        <button
-          type="button"
-          className="ad-btn ad-btn-mute"
-          onClick={() => onDelete(selected.id)}
-        >
-          <Trash2 size={16} />
-          Eliminar
-        </button>
-      </div>
+      {canManage ? (
+        <div className="ad-detail-actions">
+          <button
+            type="button"
+            className="ad-btn ad-btn-ok"
+            onClick={() => onStatus(selected.id, 'aprobado')}
+          >
+            <CheckCircle2 size={16} />
+            Aprobar
+          </button>
+          <button
+            type="button"
+            className="ad-btn ad-btn-no"
+            onClick={() => onStatus(selected.id, 'rechazado')}
+          >
+            <XCircle size={16} />
+            Rechazar
+          </button>
+          <button
+            type="button"
+            className="ad-btn ad-btn-mute"
+            onClick={() => onDelete(selected.id)}
+          >
+            <Trash2 size={16} />
+            Eliminar
+          </button>
+        </div>
+      ) : (
+        <p className="ad-readonly-note">Vista de lobby — solo lectura</p>
+      )}
     </>
   )
 }
 
 export function AdminDashboard() {
-  const { logout } = useAuth()
+  const { logout, canManage, role } = useAuth()
   const navigate = useNavigate()
   const [items, setItems] = useState<AccessSubmission[]>([])
   const [loading, setLoading] = useState(true)
@@ -233,7 +239,9 @@ export function AdminDashboard() {
           <div className="ad-brand">
             <p className="ad-brand-name">Península</p>
             <span className="ad-brand-sep" aria-hidden="true" />
-            <p className="ad-brand-sub">Administración</p>
+            <p className="ad-brand-sub">
+              {role === 'lobby' ? 'Lobby' : 'Administración'}
+            </p>
           </div>
 
           <nav className="ad-top-nav">
@@ -251,7 +259,11 @@ export function AdminDashboard() {
       <main className="ad-main">
         <div className="ad-intro">
           <h1>Solicitudes de ingreso</h1>
-          <p>Revisa y gestiona los registros del residencial.</p>
+          <p>
+            {canManage
+              ? 'Revisa y gestiona los registros del residencial.'
+              : 'Consulta las solicitudes enviadas desde el formulario.'}
+          </p>
         </div>
 
         <section className="ad-metrics">
@@ -369,6 +381,7 @@ export function AdminDashboard() {
             {selected ? (
               <DetailContent
                 selected={selected}
+                canManage={canManage}
                 onStatus={handleStatus}
                 onDelete={handleDelete}
               />
@@ -408,6 +421,7 @@ export function AdminDashboard() {
             <div className="sheet-body">
               <DetailContent
                 selected={selected}
+                canManage={canManage}
                 onStatus={handleStatus}
                 onDelete={handleDelete}
               />
