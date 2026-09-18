@@ -131,32 +131,33 @@ button {
 .lang-switch {
   display: inline-flex;
   align-items: center;
-  gap: 0.2rem;
-  padding: 0.2rem;
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  background: rgba(7, 22, 40, 0.35);
+  gap: 0.25rem;
+  padding: 0.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  background: rgba(7, 22, 40, 0.55);
+  z-index: 2;
 }
 
 .lang-btn {
   appearance: none;
   border: 0;
   background: transparent;
-  color: rgba(255, 255, 255, 0.78);
-  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.78rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
-  padding: 0.35rem 0.55rem;
+  letter-spacing: 0.1em;
+  padding: 0.45rem 0.7rem;
   cursor: pointer;
 }
 
 .lang-btn.active {
-  background: rgba(255, 255, 255, 0.16);
-  color: #fff;
+  background: #fff;
+  color: var(--navy);
 }
 
 .lang-switch-form {
-  border-color: var(--line);
-  background: var(--paper);
+  border-color: var(--navy);
+  background: #fff;
   flex-shrink: 0;
 }
 
@@ -167,6 +168,14 @@ button {
 .lang-switch-form .lang-btn.active {
   background: var(--navy);
   color: #fff;
+}
+
+.app-build {
+  margin: 0.75rem 0 0;
+  text-align: center;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  color: #9aa6b2;
 }
 
 .gate-form-head-row {

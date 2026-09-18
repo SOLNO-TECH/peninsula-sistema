@@ -22,6 +22,24 @@ app.get('/api/health', (_req, res) => {
   res.json({ ok: true })
 })
 
+app.get('/api/version', async (_req, res) => {
+  let buildId = process.env.APP_BUILD || ''
+  try {
+    const fromFile = await import('node:fs/promises').then((fs) =>
+      fs.readFile(path.join(root, 'BUILD_ID'), 'utf8'),
+    )
+    buildId = fromFile.trim() || buildId
+  } catch {
+    /* ignore */
+  }
+  res.setHeader('Cache-Control', 'no-store')
+  res.json({
+    ok: true,
+    build: buildId || 'unknown',
+    features: ['i18n', 'lobby', 'reception-email'],
+  })
+})
+
 app.post('/api/auth/login', (req, res) => {
   const { username, password } = req.body || {}
   const result = login(String(username || ''), String(password || ''))
@@ -85,7 +103,17 @@ app.delete('/api/submissions/:id', requireAdmin, async (req, res) => {
   }
 })
 
-app.use(express.static(dist, { index: false, maxAge: '1h' }))
+app.use(
+  express.static(dist, {
+    index: false,
+    maxAge: '1h',
+    setHeaders(res, filePath) {
+      if (filePath.endsWith('index.html') || filePath.endsWith('build-id.txt')) {
+        res.setHeader('Cache-Control', 'no-store')
+      }
+    },
+  }),
+)
 
 app.use((req, res, next) => {
   if (req.method !== 'GET' && req.method !== 'HEAD') {

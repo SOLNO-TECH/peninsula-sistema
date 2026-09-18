@@ -1,5 +1,5 @@
-# Dokploy Nixpacks
-# Node 20 + Express API + static frontend
+# Dokploy Nixpacks — force fresh build
+# bust: 2026-09-18-v2
 
 [phases.setup]
 nixPkgs = ["nodejs_20"]
@@ -9,9 +9,11 @@ cmds = ["npm ci"]
 
 [phases.build]
 cmds = [
+  "export VITE_APP_BUILD=2026-09-18-v2",
   "npm run build",
-  "test -f dist/peninsula-hero-v2.png",
-  "echo deploy-bust-2026-09-11-lobby-i18n"
+  "echo 2026-09-18-v2 > dist/build-id.txt",
+  "echo 2026-09-18-v2 > BUILD_ID",
+  "test -f dist/index.html"
 ]
 
 [start]

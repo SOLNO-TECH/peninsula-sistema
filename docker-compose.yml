@@ -1,0 +1,25 @@
+services:
+  peninsula:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        CACHEBUST: "2026-09-18-v2"
+        VITE_NOTIFY_EMAIL: ${VITE_NOTIFY_EMAIL:-proveedores@peninsulanvo.com}
+        VITE_FORMSUBMIT_ID: ${VITE_FORMSUBMIT_ID:-}
+        VITE_NOTIFY_EXTRA_EMAILS: ${VITE_NOTIFY_EXTRA_EMAILS:-recepcion@peninsulanvo.com}
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: "3000"
+      DATA_DIR: /data
+      ADMIN_USER: ${ADMIN_USER:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-peninsula2026}
+      LOBBY_USER: ${LOBBY_USER:-lobby}
+      LOBBY_PASSWORD: ${LOBBY_PASSWORD:-lobby2026}
+    volumes:
+      - peninsula-data:/data
+    restart: unless-stopped
+
+volumes:
+  peninsula-data:

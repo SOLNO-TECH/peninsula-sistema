@@ -328,6 +328,9 @@ export function ContactForm() {
           </form>
 
           <PoweredBy />
+          <p className="app-build" aria-hidden="true">
+            build {typeof __APP_BUILD__ !== 'undefined' ? __APP_BUILD__ : 'dev'}
+          </p>
         </div>
       </main>
     </div>
